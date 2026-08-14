@@ -1,0 +1,47 @@
+{
+  "name": "nextjs-postgresql-template",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-rds-data": "^3.1107.0",
+    "@electric-sql/pglite": "^0.5.4",
+    "@fullcalendar/react": "^7.0.2",
+    "@libsql/client": "^0.17.4",
+    "@neondatabase/serverless": "^1.1.0",
+    "@planetscale/database": "^1.20.1",
+    "@types/qrcode": "^1.5.6",
+    "@vercel/postgres": "^0.10.0",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "17.3.1",
+    "drizzle-orm": "0.45.2",
+    "mysql2": "^3.23.3",
+    "next": "16.2.6",
+    "pg": "8.20.0",
+    "postgres": "^3.4.9",
+    "qrcode": "^1.5.4",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "server-only": "^0.0.1",
+    "temporal-polyfill": "^1.0.3",
+    "tsx": "^4.23.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.17",
+    "@types/node": "22.19.15",
+    "@types/pg": "8.18.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "postcss": "8.5.8",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3"
+  }
+}
