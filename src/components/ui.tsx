@@ -57,9 +57,9 @@ export function Card({
 const TONES: Record<string, string> = {
   zinc: "border-[var(--color-line)] bg-[var(--color-surface-muted)] text-[var(--color-muted)]",
   neutral: "border-[var(--color-line)] bg-[var(--color-surface-muted)] text-[var(--color-muted)]",
-  primary: "border-[#dce9b3] bg-[var(--color-primary-soft)] text-[var(--color-primary-dark)]",
-  purple: "border-[#dce9b3] bg-[var(--color-primary-soft)] text-[var(--color-primary-dark)]",
-  blue: "border-[#dce9b3] bg-[var(--color-primary-soft)] text-[var(--color-primary-dark)]",
+  primary: "border-[#E9D5FF] bg-[#FAF5FF] text-[#6D28D9]",
+  purple: "border-[#E9D5FF] bg-[#FAF5FF] text-[#6D28D9]",
+  blue: "border-[#D1E9FF] bg-[#EFF8FF] text-[#175CD3]",
   green: "border-[#cdebd9] bg-[var(--color-success-soft)] text-[var(--color-success)]",
   amber: "border-[#f0dfbc] bg-[var(--color-warn-soft)] text-[var(--color-warn)]",
   red: "border-[#f2caca] bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
@@ -299,3 +299,35 @@ export function ActivityRow({
     </div>
   );
 }
+
+export function Drawer({
+  title,
+  open,
+  onClose,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <>
+      <div className="drawer-scrim" onClick={onClose} />
+      <div className="drawer-panel">
+        <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-4 mb-6">
+          <h2 className="text-lg font-bold tracking-tight text-[var(--color-ink)]">{title}</h2>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-line)] bg-white text-[var(--color-muted)] hover:bg-[var(--color-surface-muted)]"
+          >
+            ✕
+          </button>
+        </div>
+        {children}
+      </div>
+    </>
+  );
+}
+

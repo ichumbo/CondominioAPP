@@ -7,6 +7,10 @@ const EXPECTED_TABLES = [
   "assemblies",
   "assembly_agenda",
   "assembly_attendance",
+  "assembly_minute_downloads",
+  "assembly_minute_versions",
+  "assembly_minutes",
+  "assembly_notification_logs",
   "assembly_votes",
   "assets",
   "audit_logs",
@@ -607,6 +611,97 @@ CREATE TABLE IF NOT EXISTS "condominio_app"."visits" (
 	"created_by_id" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS "condominio_app"."assembly_minutes" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"assembly_id" integer UNIQUE NOT NULL,
+	"condo_id" integer NOT NULL,
+	"status" varchar(24) DEFAULT 'rascunho' NOT NULL,
+	"current_version" varchar(12) DEFAULT '1.0' NOT NULL,
+	"file_url" text,
+	"file_name" varchar(200),
+	"file_size_kb" integer DEFAULT 0,
+	"file_format" varchar(20) DEFAULT 'pdf',
+	"content" text,
+	"summary" text,
+	"ai_suggested_summary" text,
+	"summary_status" varchar(20) DEFAULT 'rascunho' NOT NULL,
+	"summary_approved_by_id" integer,
+	"summary_approved_at" timestamp with time zone,
+	"published_at" timestamp with time zone,
+	"published_by_id" integer,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "condominio_app"."assembly_minute_versions" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"minutes_id" integer NOT NULL,
+	"assembly_id" integer NOT NULL,
+	"version" varchar(12) NOT NULL,
+	"file_url" text,
+	"file_name" varchar(200),
+	"file_size_kb" integer DEFAULT 0,
+	"content" text,
+	"summary" text,
+	"change_reason" text,
+	"created_by_id" integer,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "condominio_app"."assembly_notification_logs" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"assembly_id" integer NOT NULL,
+	"condo_id" integer NOT NULL,
+	"trigger_event" varchar(40) NOT NULL,
+	"channel" varchar(20) DEFAULT 'app' NOT NULL,
+	"sent_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"recipients_count" integer DEFAULT 0 NOT NULL,
+	"delivered_count" integer DEFAULT 0 NOT NULL,
+	"read_count" integer DEFAULT 0 NOT NULL,
+	"failed_count" integer DEFAULT 0 NOT NULL,
+	"failure_details" text,
+	"created_by_id" integer
+);
+
+CREATE TABLE IF NOT EXISTS "condominio_app"."assembly_minute_downloads" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"assembly_id" integer NOT NULL,
+	"minutes_id" integer NOT NULL,
+	"version" varchar(12) NOT NULL,
+	"user_id" integer NOT NULL,
+	"unit_id" integer,
+	"downloaded_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "description" text;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "start_time" varchar(8);
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "end_time" varchar(8);
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "guidelines" text;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "audience_scope" varchar(20) DEFAULT 'todos';
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "target_block_id" integer;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "target_unit_id" integer;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "responsible_id" integer;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "responsible_name" varchar(140);
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "confirmation_deadline" timestamp with time zone;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "reminders_config" jsonb DEFAULT '["7d","3d","1d","0d"]'::jsonb;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "attachments" jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "notice_document_url" text;
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT now();
+ALTER TABLE "condominio_app"."assemblies" ADD COLUMN IF NOT EXISTS "updated_at" timestamp with time zone DEFAULT now();
+
+ALTER TABLE "condominio_app"."assembly_agenda" ADD COLUMN IF NOT EXISTS "attachments" jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE "condominio_app"."assembly_agenda" ADD COLUMN IF NOT EXISTS "presenter" varchar(140);
+ALTER TABLE "condominio_app"."assembly_agenda" ADD COLUMN IF NOT EXISTS "discussion_result" text;
+ALTER TABLE "condominio_app"."assembly_agenda" ADD COLUMN IF NOT EXISTS "decision" text;
+ALTER TABLE "condominio_app"."assembly_agenda" ADD COLUMN IF NOT EXISTS "notes" text;
+ALTER TABLE "condominio_app"."assembly_agenda" ADD COLUMN IF NOT EXISTS "requires_voting" boolean DEFAULT true;
+ALTER TABLE "condominio_app"."assembly_agenda" ADD COLUMN IF NOT EXISTS "voting_result" text;
+
+ALTER TABLE "condominio_app"."assembly_attendance" ADD COLUMN IF NOT EXISTS "proxy_name" varchar(140);
+ALTER TABLE "condominio_app"."assembly_attendance" ADD COLUMN IF NOT EXISTS "proxy_cpf" varchar(32);
+ALTER TABLE "condominio_app"."assembly_attendance" ADD COLUMN IF NOT EXISTS "history" jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE "condominio_app"."assembly_attendance" ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT now();
 
 CREATE UNIQUE INDEX IF NOT EXISTS "memberships_user_condo_idx" ON "condominio_app"."memberships" USING btree ("user_id","condo_id");
 `;

@@ -421,10 +421,25 @@ export const assemblies = appSchema.table("assemblies", {
   onlineLink: varchar("online_link", { length: 240 }),
   quorumFirst: integer("quorum_first").notNull().default(50),
   quorumSecond: integer("quorum_second").notNull().default(25),
-  status: varchar("status", { length: 24 }).notNull().default("convocada"),
+  status: varchar("status", { length: 24 }).notNull().default("agendada"),
   minutes: text("minutes"),
   recordingUrl: text("recording_url"),
   createdById: integer("created_by_id"),
+  description: text("description"),
+  startTime: varchar("start_time", { length: 8 }),
+  endTime: varchar("end_time", { length: 8 }),
+  guidelines: text("guidelines"),
+  audienceScope: varchar("audience_scope", { length: 20 }).notNull().default("todos"),
+  targetBlockId: integer("target_block_id"),
+  targetUnitId: integer("target_unit_id"),
+  responsibleId: integer("responsible_id"),
+  responsibleName: varchar("responsible_name", { length: 140 }),
+  confirmationDeadline: timestamp("confirmation_deadline", { withTimezone: true }),
+  remindersConfig: jsonb("reminders_config").$type<string[]>().default(["7d", "3d", "1d", "0d"]),
+  attachments: jsonb("attachments").$type<{ name: string; url: string; sizeKb?: number; uploadedAt?: string }[]>().default([]),
+  noticeDocumentUrl: text("notice_document_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const assemblyAgenda = appSchema.table("assembly_agenda", {
@@ -436,6 +451,13 @@ export const assemblyAgenda = appSchema.table("assembly_agenda", {
   votingType: varchar("voting_type", { length: 20 }).notNull().default("unidade"),
   status: varchar("status", { length: 20 }).notNull().default("pendente"),
   result: varchar("result", { length: 40 }),
+  attachments: jsonb("attachments").$type<{ name: string; url: string }[]>().default([]),
+  presenter: varchar("presenter", { length: 140 }),
+  discussionResult: text("discussion_result"),
+  decision: text("decision"),
+  notes: text("notes"),
+  requiresVoting: boolean("requires_voting").notNull().default(true),
+  votingResult: text("voting_result"),
 });
 
 export const assemblyAttendance = appSchema.table("assembly_attendance", {
@@ -446,7 +468,11 @@ export const assemblyAttendance = appSchema.table("assembly_attendance", {
   status: varchar("status", { length: 20 }).notNull().default("confirmado"),
   proxyForUnitId: integer("proxy_for_unit_id"),
   proxyDoc: varchar("proxy_doc", { length: 200 }),
+  proxyName: varchar("proxy_name", { length: 140 }),
+  proxyCpf: varchar("proxy_cpf", { length: 32 }),
+  history: jsonb("history").$type<{ timestamp: string; action: string; userName?: string; note?: string }[]>().default([]),
   checkinAt: timestamp("checkin_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const assemblyVotes = appSchema.table("assembly_votes", {
@@ -458,6 +484,68 @@ export const assemblyVotes = appSchema.table("assembly_votes", {
   choice: varchar("choice", { length: 20 }).notNull(),
   weight: varchar("weight", { length: 16 }).default("1.00"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const assemblyMinutes = appSchema.table("assembly_minutes", {
+  id: serial("id").primaryKey(),
+  assemblyId: integer("assembly_id").notNull().unique(),
+  condoId: integer("condo_id").notNull(),
+  status: varchar("status", { length: 24 }).notNull().default("rascunho"),
+  currentVersion: varchar("current_version", { length: 12 }).notNull().default("1.0"),
+  fileUrl: text("file_url"),
+  fileName: varchar("file_name", { length: 200 }),
+  fileSizeKb: integer("file_size_kb").default(0),
+  fileFormat: varchar("file_format", { length: 20 }).default("pdf"),
+  content: text("content"),
+  summary: text("summary"),
+  aiSuggestedSummary: text("ai_suggested_summary"),
+  summaryStatus: varchar("summary_status", { length: 20 }).notNull().default("rascunho"),
+  summaryApprovedById: integer("summary_approved_by_id"),
+  summaryApprovedAt: timestamp("summary_approved_at", { withTimezone: true }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  publishedById: integer("published_by_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const assemblyMinuteVersions = appSchema.table("assembly_minute_versions", {
+  id: serial("id").primaryKey(),
+  minutesId: integer("minutes_id").notNull(),
+  assemblyId: integer("assembly_id").notNull(),
+  version: varchar("version", { length: 12 }).notNull(),
+  fileUrl: text("file_url"),
+  fileName: varchar("file_name", { length: 200 }),
+  fileSizeKb: integer("file_size_kb").default(0),
+  content: text("content"),
+  summary: text("summary"),
+  changeReason: text("change_reason"),
+  createdById: integer("created_by_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const assemblyNotificationLogs = appSchema.table("assembly_notification_logs", {
+  id: serial("id").primaryKey(),
+  assemblyId: integer("assembly_id").notNull(),
+  condoId: integer("condo_id").notNull(),
+  triggerEvent: varchar("trigger_event", { length: 40 }).notNull(),
+  channel: varchar("channel", { length: 20 }).notNull().default("app"),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  recipientsCount: integer("recipients_count").notNull().default(0),
+  deliveredCount: integer("delivered_count").notNull().default(0),
+  readCount: integer("read_count").notNull().default(0),
+  failedCount: integer("failed_count").notNull().default(0),
+  failureDetails: text("failure_details"),
+  createdById: integer("created_by_id"),
+});
+
+export const assemblyMinuteDownloads = appSchema.table("assembly_minute_downloads", {
+  id: serial("id").primaryKey(),
+  assemblyId: integer("assembly_id").notNull(),
+  minutesId: integer("minutes_id").notNull(),
+  version: varchar("version", { length: 12 }).notNull(),
+  userId: integer("user_id").notNull(),
+  unitId: integer("unit_id"),
+  downloadedAt: timestamp("downloaded_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /* ----------------------------------------------------------- FINANCEIRO - */

@@ -8,6 +8,8 @@ import {
   assemblies,
   assemblyAgenda,
   assemblyAttendance,
+  assemblyMinuteVersions,
+  assemblyMinutes,
   assemblyVotes,
   assets,
   auditLogs,
@@ -392,33 +394,69 @@ async function seed() {
   ]);
 
   /* ---------------------------------------------------------- assembleia */
-  const [assembly] = await db
+  const [assembly1, assembly2] = await db
     .insert(assemblies)
     .values([
-      { condoId: condoA.id, title: "Assembleia Geral Ordinária 2026", kind: "ordinaria", mode: "hibrida", noticeAt: at(-15, 9), firstCallAt: at(4, 19), secondCallAt: at(4, 19, 30), location: "Salão de festas", onlineLink: "https://meet.exemplo/age-2026", quorumFirst: 50, quorumSecond: 25, status: "convocada", createdById: sindica.id },
-      { condoId: condoA.id, title: "AGE - Aprovação da obra da fachada", kind: "extraordinaria", mode: "presencial", noticeAt: at(-90, 9), firstCallAt: at(-60, 19), location: "Salão de festas", status: "encerrada", minutes: "Aprovada por 68% das frações a execução da obra de recuperação da fachada, com pagamento em 6 parcelas.", recordingUrl: "https://video.exemplo/age-fachada", createdById: sindica.id },
+      { condoId: condoA.id, title: "Assembleia Geral Ordinária 2026", kind: "ordinaria", mode: "hibrida", noticeAt: at(-15, 9), firstCallAt: at(4, 19), secondCallAt: at(4, 19, 30), startTime: "19:00", endTime: "21:30", location: "Salão de festas principal", onlineLink: "https://meet.exemplo/age-2026", quorumFirst: 50, quorumSecond: 25, status: "convocacao_enviada", createdById: sindica.id, responsibleName: sindica.name, guidelines: "Favor trazer documento de identificação com foto e procuração se for representar outra unidade." },
+      { condoId: condoA.id, title: "AGE - Aprovação da obra da fachada", kind: "extraordinaria", mode: "presencial", noticeAt: at(-90, 9), firstCallAt: at(-60, 19), location: "Salão de festas", status: "ata_publicada", minutes: "Aprovada por 68% das frações a execução da obra de recuperação da fachada, com pagamento em 6 parcelas.", recordingUrl: "https://video.exemplo/age-fachada", createdById: sindica.id, responsibleName: sindica.name },
     ])
     .returning();
 
   const agendaRows = await db
     .insert(assemblyAgenda)
     .values([
-      { assemblyId: assembly.id, position: 1, title: "Prestação de contas do exercício anterior", description: "Análise e votação das contas apresentadas pela síndica.", votingType: "unidade" },
-      { assemblyId: assembly.id, position: 2, title: "Previsão orçamentária e taxa condominial", description: "Aprovação do orçamento anual e reajuste da taxa.", votingType: "fracao" },
-      { assemblyId: assembly.id, position: 3, title: "Contratação de portaria remota noturna", description: "Proposta de projeto piloto por 6 meses.", votingType: "fracao" },
+      { assemblyId: assembly1.id, position: 1, title: "Prestação de contas do exercício anterior", description: "Análise e votação das contas apresentadas pela síndica.", votingType: "unidade" },
+      { assemblyId: assembly1.id, position: 2, title: "Previsão orçamentária e taxa condominial", description: "Aprovação do orçamento anual e reajuste da taxa.", votingType: "fracao" },
+      { assemblyId: assembly1.id, position: 3, title: "Contratação de portaria remota noturna", description: "Proposta de projeto piloto por 6 meses.", votingType: "fracao" },
     ])
     .returning();
 
   await db.insert(assemblyAttendance).values([
-    { assemblyId: assembly.id, unitId: A302.id, userId: moradorA.id, status: "confirmado" },
-    { assemblyId: assembly.id, unitId: B101.id, userId: moradorB.id, status: "confirmado" },
-    { assemblyId: assembly.id, unitId: unitsA[5].id, userId: conselheira.id, status: "confirmado", proxyForUnitId: unitsA[7].id, proxyDoc: "Procuração digitalizada - unidade 402" },
+    { assemblyId: assembly1.id, unitId: A302.id, userId: moradorA.id, status: "confirmado" },
+    { assemblyId: assembly1.id, unitId: B101.id, userId: moradorB.id, status: "confirmado" },
+    { assemblyId: assembly1.id, unitId: unitsA[5].id, userId: conselheira.id, status: "confirmado", proxyForUnitId: unitsA[7].id, proxyDoc: "Procuração digitalizada - unidade 402" },
   ]);
 
   await db.insert(assemblyVotes).values([
-    { assemblyId: assembly.id, agendaId: agendaRows[0].id, unitId: A302.id, userId: moradorA.id, choice: "sim", weight: "1.05" },
-    { assemblyId: assembly.id, agendaId: agendaRows[0].id, unitId: B101.id, userId: moradorB.id, choice: "sim", weight: "0.95" },
-    { assemblyId: assembly.id, agendaId: agendaRows[0].id, unitId: unitsA[5].id, userId: conselheira.id, choice: "abstencao", weight: "1.00" },
+    { assemblyId: assembly1.id, agendaId: agendaRows[0].id, unitId: A302.id, userId: moradorA.id, choice: "sim", weight: "1.05" },
+    { assemblyId: assembly1.id, agendaId: agendaRows[0].id, unitId: B101.id, userId: moradorB.id, choice: "sim", weight: "0.95" },
+    { assemblyId: assembly1.id, agendaId: agendaRows[0].id, unitId: unitsA[5].id, userId: conselheira.id, choice: "abstencao", weight: "1.00" },
+  ]);
+
+  const [minuteRecord] = await db.insert(assemblyMinutes).values([
+    {
+      assemblyId: assembly2.id,
+      condoId: condoA.id,
+      status: "publicada",
+      currentVersion: "1.0",
+      fileName: "ata-assembleia-fachada-2026.pdf",
+      fileUrl: `/api/assemblies/${assembly2.id}/minutes/download`,
+      fileSizeKb: 420,
+      fileFormat: "pdf",
+      content: "Ata da Assembleia Geral Extraordinária do Residencial Parque das Águas realizada em auditório principal.\n\nDeliberação: Aprovada por 68% das frações a execução da obra de recuperação da fachada.",
+      summary: "• ASSUNTOS PRINCIPAIS: Obra de recuperação estrutural da fachada bloco A.\n• DECISÕES TOMADAS: Aprovada por 68% dos votos presentes.\n• VALORES APROVADOS: R$ 120.000,00 divididos em 6 parcelas na taxa extra.\n• RESPONSÁVEIS E PRAZOS: Síndica e empresa contratada com início em 30 dias.",
+      summaryStatus: "aprovado",
+      summaryApprovedById: sindica.id,
+      summaryApprovedAt: at(-55, 14),
+      publishedAt: at(-55, 14),
+      publishedById: sindica.id,
+    },
+  ]).returning();
+
+  await db.insert(assemblyMinuteVersions).values([
+    {
+      minutesId: minuteRecord.id,
+      assemblyId: assembly2.id,
+      version: "1.0",
+      fileName: "ata-assembleia-fachada-2026.pdf",
+      fileUrl: `/api/assemblies/${assembly2.id}/minutes/download`,
+      fileSizeKb: 420,
+      content: minuteRecord.content,
+      summary: minuteRecord.summary,
+      changeReason: "Publicação inicial da ata aprovada pela comissão",
+      createdById: sindica.id,
+      createdAt: at(-55, 14),
+    },
   ]);
 
   /* ----------------------------------------------------------- financeiro */

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { and, asc, count, desc, eq, gte, inArray, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { amenities, announcements, blocks, parcels, reservations, tickets, units, users, visits } from "@/db/schema";
+import { amenities, announcements, assemblies, assemblyMinutes, blocks, notifications, parcels, reservations, tickets, units, users, visits } from "@/db/schema";
 import { requireCondo } from "@/lib/auth";
 import { Badge, Card, EmptyState, InfoNote, PageHeader, StatCard, statusLabel, statusTone } from "@/components/ui";
 import { Icon } from "@/components/icon";
@@ -72,6 +72,36 @@ export default async function PainelHome() {
     .orderBy(desc(announcements.pinned), desc(announcements.priority), desc(announcements.publishedAt))
     .limit(1);
 
+  // Módulo de Assembleias - Dashboard metrics
+  const [nextAssembly] = await db
+    .select()
+    .from(assemblies)
+    .where(and(eq(assemblies.condoId, condoId), inArray(assemblies.status, ["agendada", "convocacao_enviada", "em_andamento"])))
+    .orderBy(asc(assemblies.firstCallAt))
+    .limit(1);
+
+  const [pendingMinutes] = await db
+    .select({ n: count() })
+    .from(assemblies)
+    .where(and(eq(assemblies.condoId, condoId), inArray(assemblies.status, ["finalizada", "ata_em_revisao"])));
+
+  const [unreadAssemblyNotifs] = await db
+    .select({ n: count() })
+    .from(notifications)
+    .where(and(eq(notifications.condoId, condoId), eq(notifications.userId, session.user.id), isNull(notifications.readAt)));
+
+  const [recentMinutes] = await db
+    .select({
+      title: assemblies.title,
+      publishedAt: assemblyMinutes.publishedAt,
+      version: assemblyMinutes.currentVersion,
+    })
+    .from(assemblyMinutes)
+    .innerJoin(assemblies, eq(assemblies.id, assemblyMinutes.assemblyId))
+    .where(and(eq(assemblyMinutes.condoId, condoId), eq(assemblyMinutes.status, "publicada")))
+    .orderBy(desc(assemblyMinutes.publishedAt))
+    .limit(1);
+
   return (
     <>
       <PageHeader
@@ -99,46 +129,98 @@ export default async function PainelHome() {
       </section>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card
-          title="Linha do tempo"
-          description="Acompanhe somente o que precisa de ação agora. Detalhes completos ficam na tela de agenda."
-          actions={<Link href="/painel/reservas" className="btn-ghost btn-sm">Abrir agenda</Link>}
-        >
-          {todayAgenda.length === 0 ? (
-            <EmptyState
-              title="Nenhum agendamento para hoje"
-              description="Crie uma nova reserva ou consulte a visão semanal da agenda."
-              icon="calendar"
-              action={<Link href="/painel/reservas" className="btn-primary btn-sm">Novo agendamento</Link>}
-            />
-          ) : (
-            <ol className="relative space-y-3">
-              {todayAgenda.map((item, index) => {
-                const highlight = index === 0 && ["aprovada", "pendente"].includes(item.status);
-                return (
-                  <li
-                    key={item.id}
-                    className={`grid gap-3 rounded-[12px] border p-4 sm:grid-cols-[92px_minmax(0,1fr)_auto] sm:items-center ${
-                      highlight ? "border-[#d8e8a6] bg-[var(--color-primary-soft)]" : "border-[var(--color-line)] bg-white"
-                    }`}
-                  >
-                    <div>
-                      <p className="text-lg font-semibold tabular-nums text-[var(--color-ink)]">{item.start}</p>
-                      <p className="text-xs text-[var(--color-muted)]">{item.end}</p>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{item.person ?? "Morador"}</p>
-                      <p className="mt-1 text-sm text-[var(--color-muted)]">
-                        {item.amenity} · {item.block ?? ""} {item.unit ?? "área comum"}
-                      </p>
-                    </div>
-                    <Badge tone={statusTone(item.status)}>{statusLabel(item.status)}</Badge>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </Card>
+        <div className="space-y-5">
+          <Card
+            title="Linha do tempo"
+            description="Acompanhe somente o que precisa de ação agora. Detalhes completos ficam na tela de agenda."
+            actions={<Link href="/painel/reservas" className="btn-ghost btn-sm">Abrir agenda</Link>}
+          >
+            {todayAgenda.length === 0 ? (
+              <EmptyState
+                title="Nenhum agendamento para hoje"
+                description="Crie uma nova reserva ou consulte a visão semanal da agenda."
+                icon="calendar"
+                action={<Link href="/painel/reservas" className="btn-primary btn-sm">Novo agendamento</Link>}
+              />
+            ) : (
+              <ol className="relative space-y-3">
+                {todayAgenda.map((item, index) => {
+                  const highlight = index === 0 && ["aprovada", "pendente"].includes(item.status);
+                  return (
+                    <li
+                      key={item.id}
+                      className={`grid gap-3 rounded-[12px] border p-4 sm:grid-cols-[92px_minmax(0,1fr)_auto] sm:items-center ${
+                        highlight ? "border-[#d8e8a6] bg-[var(--color-primary-soft)]" : "border-[var(--color-line)] bg-white"
+                      }`}
+                    >
+                      <div>
+                        <p className="text-lg font-semibold tabular-nums text-[var(--color-ink)]">{item.start}</p>
+                        <p className="text-xs text-[var(--color-muted)]">{item.end}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{item.person ?? "Morador"}</p>
+                        <p className="mt-1 text-sm text-[var(--color-muted)]">
+                          {item.amenity} · {item.block ?? ""} {item.unit ?? "área comum"}
+                        </p>
+                      </div>
+                      <Badge tone={statusTone(item.status)}>{statusLabel(item.status)}</Badge>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </Card>
+
+          {/* Bloco compacto de Assembleias no Dashboard */}
+          <Card
+            title="Assembleias"
+            description="Convocação digital, presenças, atas e deliberações."
+            actions={<Link href="/painel/assembleias" className="btn-ghost btn-sm">Acessar assembleias</Link>}
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[10px] border border-[var(--color-line)] bg-[#FDF8FF] p-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#6D28D9]">Próxima assembleia</span>
+                  <Badge tone="purple">Digital</Badge>
+                </div>
+                {nextAssembly ? (
+                  <div className="mt-2">
+                    <p className="font-bold text-[var(--color-ink)] line-clamp-1">{nextAssembly.title}</p>
+                    <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                      {dateTimeBR(nextAssembly.firstCallAt)} · {nextAssembly.kind}
+                    </p>
+                    <Link href="/painel/assembleias" className="mt-2 inline-flex text-xs font-semibold text-[#7C3AED] hover:underline">
+                      Ver convocação e pauta →
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-[var(--color-muted)]">Nenhuma assembleia futura agendada.</p>
+                )}
+              </div>
+
+              <div className="rounded-[10px] border border-[var(--color-line)] bg-[var(--color-surface-muted)] p-3.5 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--color-muted)]">Aguardando publicação da ata:</span>
+                  <span className="font-bold text-[var(--color-ink)]">{pendingMinutes?.n ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--color-muted)]">Convocações não lidas:</span>
+                  <span className="font-bold text-[#7C3AED]">{unreadAssemblyNotifs?.n ?? 0}</span>
+                </div>
+                <div className="border-t border-[var(--color-line)] pt-2">
+                  <p className="text-[11px] font-semibold text-[var(--color-muted)] uppercase">Ata publicada recente:</p>
+                  {recentMinutes ? (
+                    <p className="mt-0.5 truncate text-[var(--color-ink)] font-medium">
+                      {recentMinutes.title} (v{recentMinutes.version || "1.0"})
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-[var(--color-subtle)]">Nenhuma ata recente.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
 
         <aside className="space-y-4">
           <Card title="Próximo agendamento">
@@ -210,3 +292,4 @@ export default async function PainelHome() {
     </>
   );
 }
+

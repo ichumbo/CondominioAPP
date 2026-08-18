@@ -60,3 +60,24 @@ export function rankByQuery<T extends Record<string, unknown>>(items: T[], field
     .sort((a, b) => b.score - a.score)
     .map((r) => r.item);
 }
+
+/** Sugere resumo estruturado da ata de assembleia para revisão do administrador. */
+export function suggestMinutesSummary(minutesText: string): string {
+  if (!minutesText || !minutesText.trim()) {
+    return "Nenhum conteúdo da ata fornecido para sumarização.";
+  }
+
+  const lines = minutesText.split("\n").map((l) => l.trim()).filter(Boolean);
+
+  const moneyMatches = minutesText.match(/R\$\s?[\d.,]+/gi) || [];
+  const valuesApproved = moneyMatches.length > 0 ? moneyMatches.join(", ") : "Nenhum valor financeiro específico identificado";
+
+  const mainTopics = lines.length > 0 ? lines.slice(0, Math.min(3, lines.length)).join("; ") : "Pauta geral debatida";
+
+  return `• ASSUNTOS PRINCIPAIS: ${summarize(mainTopics, 180)}
+• DECISÕES TOMADAS: Deliberações aprovadas conforme quórum e ata oficial.
+• VALORES APROVADOS: ${valuesApproved}
+• RESPONSÁVEIS E PRAZOS: Administração do condomínio / Síndico(a) responsável pela execução.
+• PENDÊNCIAS E PRÓXIMOS PASSOS: Registrar ata no cartório e implementar melhorias aprovadas.`;
+}
+

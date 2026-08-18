@@ -25,9 +25,10 @@ export type NavItem = {
   primary?: boolean;
 };
 
-/* Primary navigation — the 9 core destinations, shown with icon + label. */
+/* Primary navigation — core destinations, shown with icon + label. */
 const PRIMARY_NAV: NavItem[] = [
   { href: "/painel", label: "Início", icon: "grid", roles: EVERYONE, primary: true },
+  { href: "/painel/assembleias", label: "Assembleias", icon: "scale", roles: EVERYONE, primary: true },
   { href: "/painel/reservas", label: "Agenda", icon: "calendar", roles: EVERYONE, primary: true },
   { href: "/painel/chamados", label: "Atendimentos", icon: "wrench", roles: EVERYONE, primary: true },
   { href: "/painel/comunicados", label: "Comunicados", icon: "megaphone", roles: EVERYONE, primary: true },
@@ -46,7 +47,6 @@ const MORE_NAV: NavItem[] = [
   { href: "/painel/livro", label: "Livro de ocorrências", icon: "book", roles: [...GATE, "conselho"] },
   { href: "/painel/turnos", label: "Passagem de turno", icon: "refresh", roles: GATE },
   { href: "/painel/enquetes", label: "Enquetes", icon: "vote", roles: EVERYONE },
-  { href: "/painel/assembleias", label: "Assembleias", icon: "scale", roles: EVERYONE },
   { href: "/painel/achados", label: "Achados e perdidos", icon: "search", roles: EVERYONE },
   { href: "/painel/mudancas", label: "Mudanças e obras", icon: "truck", roles: EVERYONE },
   { href: "/painel/manutencao", label: "Manutenção", icon: "wrench", roles: [...ALL_STAFF, "porteiro"] },
